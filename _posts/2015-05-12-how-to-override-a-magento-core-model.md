@@ -27,7 +27,7 @@ If you observer the method you can see that there is only one event we can use `
 So as I explained above let's override the `addProduct`. By doing this we can have more flexibility around the code.
 
 ##### Acme/Test/etc/config.xml
-```
+```xml
     <global> <!-- Magento Scope -->
         <models> 
             <checkout> <!-- Core module we want to override -->
@@ -41,7 +41,7 @@ So as I explained above let's override the `addProduct`. By doing this we can ha
 ```
 
 ##### Acme/Test/Model/Cart.php
-```
+```php
 <?php
 
 class Acme_Test_Model_Cart extends Mage_Checkout_Model_Cart
