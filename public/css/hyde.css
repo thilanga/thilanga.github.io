@@ -152,7 +152,7 @@ a.sidebar-nav-item:focus {
 
 @media (min-width: 48rem) {
   .content {
-    max-width: 44rem;
+    max-width: 47rem;
     margin-left: 26rem;
     margin-right: 2rem;
   }
@@ -296,6 +296,7 @@ a.sidebar-nav-item:focus {
 
 /* comments box */
 #disqus_thread {
-  max-width: 43rem;
-  margin-left: 27rem;
+  max-width: 47rem;
+  margin-left: 26rem;
+  margin-right: 2rem;
 }
