@@ -1,0 +1,118 @@
+---
+layout: post
+title: Drupal scaling and performance tuning - Part 2
+date: 2011-10-07
+comments: true
+tags: apache drupal memcached mysql nginx php pressflow
+---
+
+
+<div class='post'>
+    <div dir="ltr" style="text-align: left;" trbidi="on">
+        <div style="text-align: left;">Drupal is highly relational. &nbsp;When it comes to&nbsp;performance, MySQL has a
+            big role to play in Drupal world. As I&nbsp;explained in <a
+                    href="http://www.pitigala.org/2011/09/drupal-scaling-and-performance-tuning.html">Drupal scaling and
+                performance tuning - Part 1</a>,&nbsp;we were able tune&nbsp;Apache&nbsp;to handle much load during high
+            traffic hours. But MySQL didn't give a chance to rest.
+        </div>
+        <div style="text-align: left;"><br/></div>
+        <div style="text-align: left;">As the first step, we decided to look at the MySQL slow&nbsp;queries&nbsp;to
+            identify bad&nbsp;queries. Server logged all&nbsp;queries that took more than 2 seconds to process and most
+            of them were node permissions, user sessions,&nbsp;access log, cache, comments, watchdog and node contents.
+        </div>
+        <div style="text-align: left;"><br/></div>
+        <div style="text-align: left;">The server load was gone up and it was almost at the frozen state most of the
+            time. As a solution, I knew that we would have to end up with a modified&nbsp;MySQL configuration file.
+        </div>
+        <div style="text-align: left;"><br/></div>
+        <div style="text-align: left;"><b>But, What are the Parameters I need to change and what are the values for
+            them, like i did for&nbsp;Apache?</b></div>
+        <div style="text-align: left;"><br/></div>
+        <div style="text-align: left;">Then I came across with a tool called&nbsp;<a
+                href="https://github.com/rackerhacker/MySQLTuner-perl">MySQLTuner-perl</a>&nbsp;which is a script
+            written in Perl that allows us to review a MySQL installation quickly and make adjustments to increase
+            performance and stability. &nbsp;The current configuration variables and status data are retrieved and
+            presented in a brief format along with some basic performance suggestions
+        </div>
+        <div style="text-align: left;"><br/></div>
+        <div style="text-align: left;"><b>Tools used</b></div>
+        <div style="text-align: left;"></div>
+        <ol style="text-align: left;">
+            <li><b><span class="Apple-style-span" style="font-weight: normal;"><a
+                    href="https://github.com/rackerhacker/MySQLTuner-perl">MySQLTuner-perl</a></span></b></li>
+            <li><b>&nbsp;</b><a href="http://www.maatkit.org/">Maatkit</a>&nbsp;(&nbsp;Power tools for open-source
+                databases)
+            </li>
+        </ol>
+        <div style="text-align: left;"></div>
+        <div style="text-align: left;"><br/></div>
+        <div style="text-align: left;"><b>Mysql Optimization - </b>I will not list all configurations here as MySQL
+            Tuner gives you a good guide
+        </div>
+        <div style="text-align: left;"></div>
+        <ol style="text-align: left;">
+            <li>MySQL Tuner</li>
+            <ol>
+                <li>Download the Mysql Tuner (wget
+                    https://github.com/rackerhacker/MySQLTuner-perl/blob/master/mysqltuner.pl)
+                </li>
+                <li>Make it executable (chmod +x mysqltuner.pl)</li>
+                <li>Run MySQL&nbsp;Turner - You need your MySQL root password in order to execute this (./mysqltuner.pl)&nbsp;</li>
+                <li>&nbsp;You should carefully read the output, especially the recommendations at the end. It shows
+                    exactly which variables you should adjust in the [mysqld] section of your my.cnf (on Debian and
+                    Ubuntu the full path is /etc/mysql/my.cnf). Whenever you change your my.cnf, make sure that you
+                    restart MySQL. You can then run MySQLTuner again to see if it has further recommendations to improve
+                    the MySQL performance. This way, you can optimize MySQL step by step.
+                </li>
+            </ol>
+            <li>Maatkit</li>
+            <ol>
+                <li>mk-duplicate-key-checker - helped me to find duplicate indexes and foreign keys on MySQL tables.&nbsp;</li>
+                <li>Removed all&nbsp;duplicate indexes and foreign keys - This&nbsp;helped&nbsp;MySQL to process SQLs
+                    smoothly.
+                </li>
+                <li>mk-query-digest and mk-query-profiler helped to profile and test new&nbsp;configurations/
+                    Modifications&nbsp;to the database.
+                </li>
+                <li>&nbsp;mk-variable-advisor to double check changes and&nbsp;recommendations made by MySQL Tuner.</li>
+            </ol>
+            <li>Converted comments, node, users tables from MyISAM to InnoDB</li>
+            <li>mysqlcheck -o -A -p command optimized other tables in the Drupal Database</li>
+        </ol>
+        After going through few cycles of above points, we were able to get the MySQL server to a level that it can
+        handle much load without any&nbsp;hiccups. Slow query log didn't report any slow quries. SHOW PROCESSLIST was
+        always below 20 - 30.<br/>
+
+        <div><br/></div>
+        <div><b>Other&nbsp;Optimizations&nbsp;used</b></div>
+        <div>
+            <ol style="text-align: left;">
+                <li>Disable watchdog, Statistic modules from Drupal to&nbsp;reduce&nbsp;the read/write load to MySQL
+                </li>
+                <li>Uninstalled all unused modules.</li>
+            </ol>
+            <div>Finally I was able to get Our <a href="http://wso2.org/">Oxygentank</a>&nbsp;Database to a state where
+                it can breathe freely without&nbsp;running on&nbsp;full power&nbsp;all the time.&nbsp;</div>
+            <div><br/></div>
+            <div>But I was not happy with this setting since the second MySQL master server was always running silently
+                without helping the Primary Master server to handle its load.
+            </div>
+            <div><br/></div>
+            <div>I used&nbsp;<span class="Apple-style-span" style="color: red;"><b>NGINX</b></span> to solve this
+                problem.
+            </div>
+            <div><br/></div>
+            <div><span class="Apple-style-span" style="background-color: white;"><span class="Apple-style-span"
+                                                                                       style="font-family: Arial, Tahoma, Helvetica, FreeSans, sans-serif;"><span
+                    class="Apple-style-span" style="font-size: 15px; line-height: 20px;"><span class="Apple-style-span"
+                                                                                               style="color: #333333;">I will discuss&nbsp;</span></span></span></span><span
+                    class="Apple-style-span"
+                    style="background-color: white; color: #333333; font-family: Arial, Tahoma, Helvetica, FreeSans, sans-serif; font-size: 15px; line-height: 20px;">how I used NGINX to share MySQL load between&nbsp;Databases / Drupal nodes with the help of&nbsp;</span><span
+                    class="Apple-style-span"
+                    style="background-color: white; color: red; font-family: Arial, Tahoma, Helvetica, FreeSans, sans-serif; font-size: 15px; line-height: 20px;"><b>Memcached,&nbsp;</b></span><span
+                    class="Apple-style-span"
+                    style="background-color: white; color: #333333; font-family: Arial, Tahoma, Helvetica, FreeSans, sans-serif; font-size: 15px; line-height: 20px;">in part 3.</span>
+            </div>
+        </div>
+    </div>
+</div>

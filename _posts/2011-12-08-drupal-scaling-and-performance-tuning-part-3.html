@@ -1,0 +1,74 @@
+---
+layout: post
+title: Drupal scaling and performance tuning - Part 3
+date: 2011-12-08
+comments: true
+tags: apache drupal memcached mysql nginx php pressflow
+---
+
+
+<div class='post'>
+    <div dir="ltr" style="text-align: left;" trbidi="on">Running&nbsp;a Developer Portal is not an easy task as I&nbsp;thought.
+        When it comes to <a href="http://wso2.org/">WSO2 Oxygentank</a>&nbsp;It is more critical as WSO2&nbsp;community&nbsp;is
+        heavily depend on the portal.<br/>
+
+        <div><br/></div>
+        <div>To be frankly if the site went offline for 1 minute, I used to get more than 20 email / &nbsp;IM chats or
+            calls. Most of the solutions described in the web really didn't work for us. So we had to find our own way
+            to stabilize the system. After spending so much of time configuring and tuning we ended up with a&nbsp;scalable&nbsp;and
+            stable solution. In part <a
+                    href="http://www.pitigala.org/2011/09/drupal-scaling-and-performance-tuning.html">1</a> and <a
+                    href="http://www.pitigala.org/2011/10/drupal-scaling-and-performance-tuning.html">2</a>&nbsp;I have
+            described methods which we used.
+        </div>
+        <div><br/></div>
+        <div>During peak hours&nbsp;Our portal started to send 502 Bad&nbsp;gateway&nbsp;message from Nginx. The reason
+            was due to mysql&nbsp;high-load in master 1 server, Nginx didn't&nbsp;receive&nbsp;the response with in
+            defined time.&nbsp;</div>
+        <div><br/></div>
+        <div>Solution was we configured Nginx with backup nodes setting instead of setting up 4 nodes with weight
+            balancing to handle the load.
+        </div>
+        <div><br/></div>
+        <div><b>Sample nginx.conf</b></div>
+        <div><b><br/></b></div>
+        <div>
+            <div>upstream wso2.org {</div>
+            <div>&nbsp; &nbsp; server node1server:80 weight=5 fail_timeout=20s;</div>
+            <div>&nbsp; &nbsp; server node2server.org:80 weight=5 fail_timeout=20s;</div>
+            <div>&nbsp; &nbsp; server node3server:80 backup;</div>
+            <div>&nbsp; &nbsp; server node4server:80 backup;</div>
+            <div>&nbsp; }</div>
+            <div style="font-weight: bold;"><br/></div>
+        </div>
+        <div>with this setup&nbsp;</div>
+        <div>
+            <ol style="text-align: left;">
+                <li>Nginx&nbsp;always&nbsp;send traffic to node1 and node2 servers</li>
+                <li>Primary&nbsp;data source is master1 mysql instance.</li>
+                <li>Secondary data source is master2 MySQL instance</li>
+            </ol>
+            When node1 or node2&nbsp;couldn't&nbsp;response to Nginx with in 20 seconds we route the traffic to backup
+            nodes
+        </div>
+        <div>
+            <ol style="text-align: left;">
+                <li>Nginx send traffic to node3 and node4 when node1 and node2 can not&nbsp;response&nbsp;</li>
+                <li>Primary data source is master2 MySQL Instance</li>
+                <li>Secondary data source is master1 MySQL instance</li>
+            </ol>
+            <div>with that setting we were able to keep the site with 0% downtime.</div>
+            <div><br/></div>
+            <div class="separator" style="clear: both; text-align: center;"><a
+                    href="http://3.bp.blogspot.com/-lqkazMDiwrE/T2HElSV9nAI/AAAAAAAAAJA/hvDRZRIaMns/s1600/1.JPG"
+                    imageanchor="1" style="margin-left: 1em; margin-right: 1em;"><img border="0" height="400"
+                                                                                      src="http://3.bp.blogspot.com/-lqkazMDiwrE/T2HElSV9nAI/AAAAAAAAAJA/hvDRZRIaMns/s400/1.JPG"
+                                                                                      width="345"/></a></div>
+            <div class="separator" style="clear: both; text-align: center;"><br/></div>
+            <div class="separator" style="clear: both; text-align: center;">(Overview of WSO2 Oxygentank)</div>
+            <div><br/></div>
+            <div>Nginx&nbsp;always looked after load balancing when http/s traffic get high and with the backup node
+                method we were able to keep our MySQL instance up and running without getting meltdown.&nbsp;&nbsp;&nbsp;</div>
+        </div>
+    </div>
+</div>
