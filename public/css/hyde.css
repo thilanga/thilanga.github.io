@@ -293,10 +293,3 @@ a.sidebar-nav-item:focus {
 .theme-long-qian .related-posts li a:hover {
   color: #8f5536;
 }
-
-/* comments box */
-#disqus_thread {
-  max-width: 47rem;
-  margin-left: 26rem;
-  margin-right: 2rem;
-}
