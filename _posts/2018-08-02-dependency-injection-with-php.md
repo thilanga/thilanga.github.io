@@ -4,33 +4,36 @@ title: "Dependency Injection with PHP"
 date: 2018-08-02
 comments: true
 tags: dependency-injection clean-code php
-description: How to do Dependency Injections properly and keep code clean and scalable 
+description: Clean and scalable Dependency Injections with PHP 
 ---
 ```
-Dependency Injection. Everyone knows about it, has heard about it.
+Dependency Injection. Everyone has heard about it, but do they really know it?
 ```
 
-This is the common answer I get from most of candidates I have interviewed in the past couple of years when looking for Software Engineers to work on the BI software [EngineRoom](https://digital360.com.au/technology){:target="_blank"} that we are building at [Digital360](https://digital360.com.au/){:target="_blank"}.
-But when digging bit deeper to solutions they have built in the past, it has shown that most of solutions haven’t followed proper implementation techniques.
+This is a common theme I get from most candidates I have interviewed in the past couple of years when looking for Software Engineers to work on our SaaS based BI platform [EngineRoom](https://digital360.com.au/technology){:target="_blank"} at [Digital360](https://digital360.com.au/){:target="_blank"}.
+But when I dig a little deeper into solutions they have built in the past, it has shown that most haven’t followed proper implementation techniques.
 
-In this blog post, I'll try to explain my take on the dependency injection.
+In this blog post, I'll try to explain my take on dependency injection, and in particular how to implement a scalable solution.
 
-### What is a dependency?
-According to the [Wikipedia](https://en.wikipedia.org/wiki/Dependency_injection){:target="_blank"}.
+## What is a dependency?
+According to [Wikipedia](https://en.wikipedia.org/wiki/Dependency_injection){:target="_blank"}.
 In software engineering, dependency injection is a technique whereby one object (or static method) supplies the dependencies of another object.
 A dependency is an object that can be used (a service). An injection is the passing of a dependency to a dependent object (a client) that would use it.
 
 In this context an object (A) that expects another object's (B) help to complete a job that object (A) is responsible for.
-To explain the theory, I'll be building a simple music player that can be used against multiple music services like Google Music, Spotify, etc.
+To explain the theory, I'll build a simple music player that can be used against multiple music services like Google Music, Spotify, etc.
 
-### Objective
+## Objective
 Music player should be able to play music from user's preferred music service.
 
-#### ProTip: How to find which dependencies to inject?
-`If we look at the above requirement, the music services are on the strong side and the music player has less authority in making decisions.
-In this case we inject the music service to the music player.`
+> ProTip: How to find which dependencies to inject?
 
-#### First let's start with a bad code to get it working.
+>> If we look at the above requirement, the music player is more on the parental side, it requires any number of music services to function. Therefore it makes sense to inject the music service into the music player.
+
+### Approaches
+#### Common Approach
+
+> This is a common approach that doesn't use Dependency Injection
 
 ```php
 class MusicPlayer
@@ -44,12 +47,14 @@ class MusicPlayer
 }
 ```
 
-If you look at the code above, someone might say `yeah that's dependency injection`. Not just injection.
-It's constructor injection. Because it injects the object in to the Music player class using the constructor.
+If you look at the code above, someone might say:
+> "yeah that's dependency injection."
 
-This is not a good dependency injection. Because GoogleMusic class is hard wired to the MusicPlayer class.
+But, due to that method injecting the object into the `MusicPlayer` class using the constructor, this is considered Constructor Injection.
 
-We also can create the GoogleMusic object inside the MusicPlayer class.
+This is considered bad practice as it permanently binds the `GoogleMusic` class to the `MusicPlayer` class.
+
+Another example is creating the `GoogleMusic` object inside the `MusicPlayer` class.
 
 ```php
 class MusicPlayer
@@ -62,10 +67,10 @@ class MusicPlayer
     }
 }
 ```
-Sad truth is, both code snippets above doing the same mistake. They are hard wired to the MusicPlayer class.
-Now Music class has become unusable for Spotify music service and only can be used by GoogleMusic.
+Both code snippets above are doing the same mistake. They are permanently binding the `GoogleMusic` service to the `MusicPlayer` class.
+Now the `MusicPlayer` class has become unusable for anything other than the `GoogleMusic` service, so other services like the `SpotifyMusic` service cannot be used.
 
-Let's add support to Spotify music service. 
+Let's add some support for the `SpotifyMusic` service. 
 
 ```php
 class MusicPlayer
@@ -88,39 +93,37 @@ class MusicPlayer
 }
 ```
 
-In this scenario, the music player can work with Google Music and Spotify. But the Music services are still coupled tightly with the player.
+In this scenario, the music player can work with Google Music and Spotify. But the music services are still coupled tightly with the player.
 
-#### What are the issue we are going to face if we couple our code tightly to the Music player?
-1. At the moment we can't support another Music Service. For an example, if we need to support Apple Music.
-Only there are two ways to support this with the current implementation. 
+##### What issues are we are going to face if we couple our code tightly to the Music player?
+1. It's not scalable, we can't easily add another music service such as `AppleMusic`.
+With the current implementation, there are two ways to support this by editing both the `MusicPlayer` class and the `AppleMusic` class: 
 
     - Inject AppleMusic as an argument
     - Initiate AppleMusic object within the constructor
 
-2. Another issue is having to edit two files minimum (MusicPlayer class and AppleMusic class) 
+#### A better approach
 
-#### Ok. Enough of bad approaches. What's a correct approach?
-`Dependency Injection is the correct approach here.`
+> Using Dependency Injection.
 
 First. Let's look at the problem we are trying to solve once more. 
 
-`We are building a system that can play music based on a user's prefered service.`
+> We are building a system that can play music based on a user's prefered service.
 
 If you read the problem again you can see that we are going to have multiple music services.
-To use multiple services with dependency injections we need to build services against contracts. When I say a contract I meant an `Interface class`.
+To use multiple services with dependency injections we need to build services against contracts. A contract in OOP is an `Interface`.
 
-#### ProTip: When to create an Interface?
-`I have seen some developers go overboard with writing codes against interfaces for everything and make the code so dynamic without having the real need.
-If you are going to have more than one similar type of class (Google Music, Spotify, Apple Music, etc.), then only create an interface.`
+> ProTip: When to create an Interface?
 
-As we know that we are going to support more than one music service, we will be creating `IMusicService interface` and `ITrack` interface.
+>> I have seen some developers go overboard with writing code against interfaces for everything and make the code so dynamic without having the real need. If you are going to have more than one similar type of class (Google Music, Spotify, Apple Music, etc.), then create one interface.
 
-We don't need an interface for the music player because there is going to be only one player.
+As we know that we are going to support more than one music service, we will be creating an `IMusicService` interface and an `ITrack` interface.
 
-#### But why an Interface for the Track?
+We don't need an interface for the music player because there is only going to be one player.
 
-We don't know how other services will return track listings and other information.
-In this case to be safe we can have separate ITrack implementations to handle separate responses.
+> But why an Interface for the Track?
+
+>> We don't know how other services will return track listings or other information, therefore to be on the safe side, we can have a separate ITrack implementation to handle separate responses.
 
 ```php
 // MusicService Interface
@@ -193,7 +196,7 @@ class MusicPlayer
 
 If you look at the MusicPlayer constructor, it takes one argument. It's the Music service Interface.
 
-It's time to let the music player to play some tracks from services. 
+It's time to let the music player play some tracks from the injected services. 
 
 ```php
 require __DIR__ . '/vendor/autoload.php';
@@ -221,16 +224,16 @@ try {
 }
 ```
 
-#### We can do better.
-We can use an IoC container (Inversion of Control) to handle these objects creations and not to worry about it again until there is a new service that we need to support.
+#### The ideal approach.
+We can use an IoC container (Inversion of Control) to handle the creation of these objects and not worry about it again until there is a new service that needs to be supported.
 
-As IoC is its own topic to talk about and I won't get deeper in to the subject here. For the moment think about it as a dynamic object injection based on required dependencies by the MusicPlayer class (Just remember IoC is more than that).
+As IoC is its own topic I won't get too deep on that subject here. For the moment think about it as a dynamic object injection based on required dependencies by the `MusicPlayer` class (although it's much more than that).
 
-`In this article/tutorial I'll be using Laravel's IoC container.`
+> In the example that follows, I'll be using Laravel's IoC container.
 
-Once the IoC installation is done using the composer, we can create an IoC instance and let it to handle injection to the MusicPlayer instance based on the logic we want. 
+Once the IoC installation is done using composer, we can create an IoC instance and let it handle injection to the `MusicPlayer` instance based on the logic we want. 
 
-In our case loading different music service objects bases on different user preferences.
+In our case loading different music service objects based on different user preferences.
 
 ```php
 require __DIR__ . '/vendor/autoload.php';
@@ -264,9 +267,10 @@ try {
 }
 ```
 
-#### Now it's time to test the code.
+## Conclusion
+
+> Test the code!
+
 You can find the completed code in the [Github](https://github.com/thilanga/di_sample){:target="_blank"}. It comes with a Dockerfile for you to try it out.
 
 If you have any questions/suggestions around the implementation feel free to contact me. 
-
-
