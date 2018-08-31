@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "How to boost application performance (without touching your core code base)"
-date: 2018-09-02
+date: 2018-08-03
 comments: true
 tags: design-pattern performance clean-code php
 description: How to boost application performance (without touching your core code base) 
@@ -41,24 +41,25 @@ and some endpoints were taking up to 4 seconds when doing calculations against b
 As we looked into the issue, it turned out to be that some helper classes responsible for calculations were regularly being calling.
 Especially when pulling data from 3 or 4 levels down the chain.
 
-    > We made two key changes to improve performance.
+## We made two key changes to improve performance.
 
-The first solution was to optimise the methods that load data objects. We used lazy loading on all the nested data
-relationships to reduce this stress. The second solution was to cache data that was already being called during the process.
+1. The first solution was to optimise the methods that load data objects. We used lazy loading on all the nested data
+relationships to reduce this stress.
+2. The second solution was to cache data that was already being called during the process.
 
-## Architecture of the application
+### Architecture of the application
 Before we dive deeper into cache implementation, let's have a look at the application structure.
 
  - Backend API - Laravel
  - Frontend - VueJS
  - Database - mongoDB
  - Cache - Redis
+ - The application is also deployed using Docker and deployment is done in separate containers.
 
-    >> The application is also deployed using Docker and deployment is done in separate containers.
 
-Looking at the architecture of the application, we had plenty of freedom to optimise along many levels.
+> Looking at the architecture of the application, we had plenty of freedom to optimise along many levels.
 
-Cache Implementation
+## Cache Implementation
 
 Before we got started, we made a couple of rules:
 
