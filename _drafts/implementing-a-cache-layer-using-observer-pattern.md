@@ -1,85 +1,108 @@
 ---
 layout: post
-title: Implementing a Cache layer using Observer Pattern
+title: "How to boost application performance (without touching your core code base)"
+date: 2018-09-02
+comments: true
+tags: design-pattern performance clean-code php
+description: How to boost application performance (without touching your core code base) 
 ---
-When talking about performance improvements of an application, first thing that comes to our mind is cache. Next thought that follows is, what is the easiest and quickest way to implement it. This is the stage that everybody get together and start pointing fingers at each other, blaming didn't have enough time to think about it due tight deadlines, too much changes to be done and don't want to touch the code etc.
+When talking about making performance improvements to an application, the first thing that comes to mind is caching.
+The next thought that usually follows is, ‘What is the easiest and quickest way to implement it?’.
 
-My point on this is performance of the application is we should think about performance at the very start of the project. Even before we as developers open the code editor and write the very first line.
+When building software, inevitably there comes the stage where the development team will start talking about performance
+improvements. And that’s when fingers get pointed.
 
-To explain this well, I'll take an example from the project I'm currently working on. 
+Some in the team will say didn't have enough time to think about it, due to the tight deadlines. Others will say there
+are too many changes to be made, and now they don't want to touch the code.
 
-This application is built using nested set model (tree architecture).[link wiki]. We use MongoDB to store data and application lifts the weight of object loading.
+That’s why we, as developers, should think about the application’s performance at the very start of the project. Yes,
+even before we open the code editor and write the very first line.
 
-In simple, we have only one class which is responsible for all data objects in the system (there are few more classes that help handling data validation, related data loading etc.) but the core of the application is simply one class. Any data point in the system is an instance of a the main class.
+I'll take an example from the project I'm currently working on.
 
-The Problem
+In my team, we were fortunate that performance improvements could be made without making changes to the core code base.
+The application is built using nested set model (tree architecture). [link wiki]. We use MongoDB to store the data and
+the application lifts the weight of object loading.
 
-This architecture has helped us scale the system without having any core changes (core of the application hasn't been touched in years). Even though this architecture has lots of pros in our case, it has its drawbacks when it comes to performance (our benchmark was to load any given endpoint within less than a second).
+In simple terms, we have only one class which is responsible for all data objects in the system. Yes,
+there are few more classes that help handling data validation, related data loading, and more, but the core of the
+application is one class. Any data point in the system is an instance of that main class.
 
-Application is very data heavy and some endpoints took up to 4 seconds when doing calculations against big datasets. 
+## The Problem
 
-As we look into the issue, it turned out to be that some helper classes that were responsible for calculations were called few times. Especially when pulling data from 3 or 4 level down the chain. 
+This architecture has helped us scale the system without having to make any core changes to the code base.
+In fact, the core of the application hasn't been touched in years.
 
-To fix this problem the first solution was to optimize methods that were loading data objects. We used lazy loading on all the nested data relationships to reduce the stress. Second solution was to cache data is been already called during the process.
+But even though this architecture has lots of pros in our case, it has its drawbacks when it comes to performance.
 
-Before we dive deeper in the Cache implementation let's have a look at the application structure.
+Our benchmark was for any endpoint to load within less than a second. Our application is very data heavy,
+and some endpoints were taking up to 4 seconds when doing calculations against big datasets.
 
-Application Architecture.
+As we looked into the issue, it turned out to be that some helper classes responsible for calculations were regularly being calling.
+Especially when pulling data from 3 or 4 levels down the chain.
 
-Backend API - Laravel
-Frontend - VueJS
-Database - mongoDB
-Cache - Redis
+    > We made two key changes to improve performance.
 
-Application is deployed using docker and deployment is been done as separate container.
+The first solution was to optimise the methods that load data objects. We used lazy loading on all the nested data
+relationships to reduce this stress. The second solution was to cache data that was already being called during the process.
 
-This gave is plenty of freedom to optimise at so many levels.
+## Architecture of the application
+Before we dive deeper into cache implementation, let's have a look at the application structure.
+
+ - Backend API - Laravel
+ - Frontend - VueJS
+ - Database - mongoDB
+ - Cache - Redis
+
+    >> The application is also deployed using Docker and deployment is done in separate containers.
+
+Looking at the architecture of the application, we had plenty of freedom to optimise along many levels.
 
 Cache Implementation
-We put couple of rules before come up with a solution.
 
-Change the core only if it's the last resort.
-Utilities existing resources
-Implementation shouldn't take long to implement (To avoid any major refactoring)
+Before we got started, we made a couple of rules:
 
-By looking at the above constraints it was clear that we had to use Observer pattern if we are to implement a solution without touching the core and build a solution as a wrapper to the application. 
+	
+We 	could only change the core code as a last resort.
+	
+We 	needed to utilise our existing resources
+	
+Implementation 	shouldn't take long, to avoid any major refactoring.
+
+Given the above constraints, it was clear we had to use an observer pattern as a wrapper to the application so we wouldn’t touch the core code.
 
 Implementation
 
-Knowing that we will be building the cache layer using Observer Pattern, we started utilising Laravel's IoC container. 
+Now we knew we were building the cache layer using an observer pattern, we started utilising Laravel's IoC container.
 
-As we found that bottleneck was constant data load from the DB
-First we started injecting concrete data related class.
+And since we knew a bottleneck was the constant data load from the database, we started by injecting a concrete data related class.
 
 Service Provider code with concrete class
 
-Then we created interfaces with data fetching methods. The reason behind this approach was to have class that can load data from cache with same method names. That way there will be no changes to the core code.
+The next step was to create interfaces with data fetching methods. The reason behind this approach was to have a class that can load data from the cache with the same method names. This way, there was no need to change the core code.
 
 Data load interfaces
 
-Once we have all those heavy data loading methods been extracted to interfaces, now it's time to implement Cache supported class.
+Once we had all those heavy data loading methods being extracted to interfaces, it was time to implement cache supported class.
 
-Protip: Be wise when creating cache tags and use short cache tag names. Redis will thank you a lot in the long run.
+Protip: Be wise when creating your cache tags and remember to use short cache tag names. Redis will thank you in the long run.
 
 Cache supported class
 
-Once we done creating cache supported class we can easily replace them with our concrete class with the help of the IoC container.
+Once we created the cache supported classes, we could easily replace them with our concrete class with the help of the IoC container.
 
 
 IoC code that replace the concrete class
 
 
-There you have it. 
+And there you have it. We have implemented a caching wrapper without disrupting the core of the application.
 
-Now when the application calls any data loading methods it'll look in the cache first before it talks to the DB.
+Now when the application calls any data loading methods it'll look in the cache first before it talks to the database.
 
-Here we have implemented a caching wrapper without disrupting the core of the application. 
+A final word: Cache expiration
 
-Cache expiration
-
-In out application we have one core class that it responsible of talking to DB. We implemented cache expiration using boot method in Elequent. But if you are not using Laravel you can use DB model events that comes with the library that you use.
+As I mentioned earlier, in our application there is only one core class responsible for talking to database. We implemented cache expiration using the boot method in Elequent. But if you are not using Laravel, you can use the database model events that come with the library that you use.
 
 Boot method goes here
 
-Protip
-When cache invalidation we need to make sure we use correct cache keys. Otherwise wise it'll drop the whole cache on every modification to the data.
+Protip: When it comes to cache invalidation we you need to make sure you use correct cache keys. Otherwise, it'll drop the whole cache when you transact with the database each and every time.
