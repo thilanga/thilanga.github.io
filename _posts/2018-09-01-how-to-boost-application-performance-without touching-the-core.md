@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "How to boost application performance (without touching the core)"
-date: 2018-09-01
+date: 2018-09-04
 comments: true
-tags: design-pattern performance clean-code php
+tags: design-patterns performance clean-code php
 description: How to boost application performance (without touching the core) 
 ---
 When talking about making performance improvements to an application, the first thing that comes to mind is caching.
