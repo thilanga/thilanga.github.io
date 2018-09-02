@@ -1,13 +1,16 @@
 ---
 layout: post
 title: "How to boost application performance (without touching the core)"
-date: 2018-09-04
+date: 2018-09-01
 comments: true
 tags: design-patterns performance clean-code php
 description: How to boost application performance (without touching the core) 
 ---
+```
 When talking about making performance improvements to an application, the first thing that comes to mind is caching.
+
 The next thought that usually follows is, ‘What is the easiest and quickest way to implement it?’.
+```
 
 When building software, inevitably there comes the stage where the development team will start talking about performance
 improvements. And that’s when fingers get pointed.
@@ -74,13 +77,64 @@ Now we knew we were building the cache layer using an observer pattern, we start
 
 And since the bottleneck was the constant data load from the database, we started by injecting a concrete implimentation of the data class.
 
-```PHP CODE goes here Service Provider code with concrete class```
+> Inject concrete class with the help of the service provider
+
+```php
+class BusinessPlansServiceProvider extends ServiceProvider
+{
+
+    public function register()
+    {
+        $this->app->singleton(Plan::class, function () {
+            // return new Plan object;
+            return new Plan();
+        });
+
+        $this->app->singleton(PlanDataList::class, function () {
+            // return new Table;
+            return new PlanDataList();
+        });
+    }
+}
+```
+
+> Resolving injected class within the logic class
+
+```php
+    protected function addBucket($name, $key)
+    {
+        $data = app(PlanDataList::class);
+        $data->setPlanId($this->getPlanId());
+        $loadedData = $data->loadData($name);
+
+        $this->addRow(is_string($key) ? $key : $name, $loadedData);
+    }
+```
 
 The next step was to create interfaces with data fetching methods. The reason behind this approach was to have a class that can load data from the cache with the same method names. This way, there was no need to change the core code.
 
-## Data load interfaces
+## Interfaces
 
 Once we had all those heavy data loading methods being extracted to interfaces, it was time to implement cache supported class.
+
+> `PlanDataListInterface.php`
+
+```php
+interface PlanDataListInterface
+{
+    public function setPlanId(string $planId);
+    public function loadData(string $bucket);
+}
+```
+
+> `PlanInterface.php`
+
+```php
+interface PlanInterface
+{
+    public function getPlan(string $planId);
+}
+```
 
 > Protip: Be wise when creating your cache tags and remember to use short cache tag names. Redis will thank you in the long run.
 
@@ -89,7 +143,91 @@ Once we had all those heavy data loading methods being extracted to interfaces, 
 Once we created the cache supported classes, we could easily replace them with our concrete class with the help of the [Service Container](https://laravel.com/docs/master/container/){:target="_blank"}.
 
 
-``` IoC code that replace the concrete class ```
+```php
+class BusinessPlansServiceProvider extends ServiceProvider
+{
+    public function register()
+    {
+        $this->app->singleton(Plan::class, function () {
+            // return new Plan object;
+            return new PlanCache(new Plan());
+        });
+
+        $this->app->singleton(PlanDataList::class, function () {
+            // return new Table;
+            return new PlanDataCache(new PlanDataList());
+        });
+    }
+}
+```
+
+> `PlanCache.php`
+
+```php
+class PlanCache implements PlanInterface
+{
+    use CacheTracker;
+    const CACHE_LIFE_TIME = 8;
+
+    private $next;
+
+    public function __construct(Plan $next)
+    {
+        $this->next = $next;
+    }
+
+    public function getPlan(string $planId)
+    {
+        $expiresAt = Carbon::now()->addHours(self::CACHE_LIFE_TIME);
+
+        return Cache::tags(CacheTracker::genCacheTags())
+                ->remember(CacheTracker::genCacheKey(['get_plan',]), $expiresAt,
+                    function () use ($planId) {
+                        return $this->next->getPlan($planId);
+                    });
+    }
+}
+```
+
+
+> `PlanDataCache.php`
+
+```php
+class PlanDataCache implements PlanDataListInterface
+{
+    use CacheTracker;
+    const CACHE_LIFE_TIME = 8;
+
+    private $next;
+
+    public function __construct(PlanDataList $next)
+    {
+        $this->next = $next;
+    }
+
+    public function setPlanId(string $planId)
+    {
+        $expiresAt = Carbon::now()->addHours(self::CACHE_LIFE_TIME);
+
+        return Cache::tags(CacheTracker::genCacheTags())
+                ->remember(CacheTracker::genCacheKey(['setPlanId']), $expiresAt,
+                    function () use ($planId) {
+                        return $this->next->setPlanId($planId);
+                    });
+    }
+
+    public function loadData(string $bucket)
+    {
+        $expiresAt = Carbon::now()->addHours(self::CACHE_LIFE_TIME);
+
+        return Cache::tags(CacheTracker::genCacheTags())
+                ->remember(CacheTracker::genCacheKey(['loadData', $bucket]), $expiresAt,
+                    function () use ($bucket) {
+                        return $this->next->loadData($bucket);
+                    });
+    }
+}
+```
 
 
 And there you have it.
@@ -102,6 +240,75 @@ Now when the application calls any data loading methods it'll look in the cache 
 
 As I mentioned earlier, in our application there is only one core class responsible for talking to database. We implemented cache expiration using the boot method in Elequent. But if you are not using Laravel, you can use the database model events that come with the library that you use.
 
-``` Boot method goes here ```
+`CacheTracker.php` was used as a helper class to support the cache implimentation
+
+> `CacheTracker.php`
+
+```php
+trait CacheTracker
+{
+    public static function bootCacheTracker()
+    {
+        static::created(function ($instance) {
+            self::flushCache();
+        });
+
+        static::deleted(function ($instance) {
+            self::flushCache();
+        });
+
+        static::saved(function ($instance) {
+            self::flushCache();
+        });
+
+
+        static::updated(function ($instance) {
+            self::flushCache();
+        });
+    }
+
+    public static function flushCache(array $tags = [])
+    {
+        if (count($tags) === 0) {
+            $tags = self::genCacheTags();
+        }
+
+        Cache::tags($tags)->flush();
+    }
+
+    public static function genCacheTags()
+    {
+        $arrForKey = [
+            'module',
+            'business'
+        ];
+
+        return $arrForKey;
+    }
+
+    public static function genCacheKey($args = [])
+    {
+        $filterQuery = (app(FilterQuery::class));
+        $filterArray = $filterQuery->getFilterArray(request());
+
+        $businessId = $filterQuery->pluckBusinessIdFromFilter(collect($filterArray))->first();
+        $planId = $filterQuery->pluck(collect($filterArray), 'id')->first();
+
+        $arrForKey = [
+            'bi_',
+            $businessId,
+            $planId
+        ];
+
+        $cacheKey = implode('_', array_merge($arrForKey, $args));
+
+        return md5($cacheKey);
+    }
+}
+```
 
 > Protip: When it comes to cache invalidation we you need to make sure you use correct cache keys. Otherwise, it'll drop the whole cache when you transact with the database each and every time.
+
+## Outcome
+
+<img src="/assets/img/cache_layer_results.png" width="50%">
