@@ -36,17 +36,17 @@ html {
 }
 @media (min-width: 48rem) {
   html {
-    font-size: 16px;
+    font-size: 18px;
   }
 }
 @media (min-width: 64rem) {
   html {
-    font-size: 16px;
+    font-size: 18px;
   }
 }
 @media (min-width: 80rem) {
   html {
-    font-size: 16px;
+    font-size: 18px;
   }
 }
 /*
@@ -152,7 +152,7 @@ a.sidebar-nav-item:focus {
 
 @media (min-width: 48rem) {
   .content {
-    max-width: 47rem;
+    max-width: 80%;
     margin-left: 26rem;
     margin-right: 2rem;
   }

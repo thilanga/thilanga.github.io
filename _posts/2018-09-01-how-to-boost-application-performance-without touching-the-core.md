@@ -311,4 +311,4 @@ trait CacheTracker
 
 ## Outcome
 
-<img src="/assets/img/cache_layer_results.png" width="50%">
+<img src="/assets/img/cache_layer_results.png" width="40%">
