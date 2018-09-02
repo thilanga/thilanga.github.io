@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "How to boost application performance (without touching the core)"
-date: 2018-08-03
+date: 2018-09-01
 comments: true
 tags: design-pattern performance clean-code php
 description: How to boost application performance (without touching the core) 
