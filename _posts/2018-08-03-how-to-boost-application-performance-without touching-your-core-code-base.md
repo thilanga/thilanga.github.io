@@ -1,10 +1,10 @@
 ---
 layout: post
-title: "How to boost application performance (without touching your core code base)"
+title: "How to boost application performance (without touching the core)"
 date: 2018-08-03
 comments: true
 tags: design-pattern performance clean-code php
-description: How to boost application performance (without touching your core code base) 
+description: How to boost application performance (without touching the core) 
 ---
 When talking about making performance improvements to an application, the first thing that comes to mind is caching.
 The next thought that usually follows is, ‘What is the easiest and quickest way to implement it?’.
@@ -61,49 +61,47 @@ Before we dive deeper into cache implementation, let's have a look at the applic
 
 ## Cache Implementation
 
-Before we got started, we made a couple of rules:
-
-	
-We 	could only change the core code as a last resort.
-	
-We 	needed to utilise our existing resources
-	
-Implementation 	shouldn't take long, to avoid any major refactoring.
+>Before we got started, we made few rules:
+1. We 	could only change the core code as a last resort.
+2. We 	needed to utilise our existing resources
+3. Implementation shouldn't take long, to avoid any major refactoring.
 
 Given the above constraints, it was clear we had to use an observer pattern as a wrapper to the application so we wouldn’t touch the core code.
 
-Implementation
+## Implementation
 
-Now we knew we were building the cache layer using an observer pattern, we started utilising Laravel's IoC container.
+Now we knew we were building the cache layer using an observer pattern, we started utilising [Laravel's Service Container](https://laravel.com/docs/master/container/){:target="_blank"}.
 
-And since we knew a bottleneck was the constant data load from the database, we started by injecting a concrete data related class.
+And since the bottleneck was the constant data load from the database, we started by injecting a concrete implimentation of the data class.
 
-Service Provider code with concrete class
+```PHP CODE goes here Service Provider code with concrete class```
 
 The next step was to create interfaces with data fetching methods. The reason behind this approach was to have a class that can load data from the cache with the same method names. This way, there was no need to change the core code.
 
-Data load interfaces
+## Data load interfaces
 
 Once we had all those heavy data loading methods being extracted to interfaces, it was time to implement cache supported class.
 
-Protip: Be wise when creating your cache tags and remember to use short cache tag names. Redis will thank you in the long run.
+> Protip: Be wise when creating your cache tags and remember to use short cache tag names. Redis will thank you in the long run.
 
-Cache supported class
+## Cache supported class
 
-Once we created the cache supported classes, we could easily replace them with our concrete class with the help of the IoC container.
-
-
-IoC code that replace the concrete class
+Once we created the cache supported classes, we could easily replace them with our concrete class with the help of the [Service Container](https://laravel.com/docs/master/container/){:target="_blank"}.
 
 
-And there you have it. We have implemented a caching wrapper without disrupting the core of the application.
+``` IoC code that replace the concrete class ```
+
+
+And there you have it.
+
+> We have implemented a caching wrapper without disrupting the core of the application.
 
 Now when the application calls any data loading methods it'll look in the cache first before it talks to the database.
 
-A final word: Cache expiration
+## A final word: Cache expiration
 
 As I mentioned earlier, in our application there is only one core class responsible for talking to database. We implemented cache expiration using the boot method in Elequent. But if you are not using Laravel, you can use the database model events that come with the library that you use.
 
-Boot method goes here
+``` Boot method goes here ```
 
-Protip: When it comes to cache invalidation we you need to make sure you use correct cache keys. Otherwise, it'll drop the whole cache when you transact with the database each and every time.
+> Protip: When it comes to cache invalidation we you need to make sure you use correct cache keys. Otherwise, it'll drop the whole cache when you transact with the database each and every time.
