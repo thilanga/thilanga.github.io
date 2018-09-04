@@ -307,4 +307,4 @@ trait CacheTracker
 }
 ```
 
-> Protip: When it comes to cache invalidation we you need to make sure you use correct cache keys. Otherwise, it'll drop the whole cache when you transact with the database each and every time.
+> Protip: When it comes to cache invalidation you need to make sure you use correct cache keys. Otherwise, it'll drop the whole cache when you transact with the database each and every time.
