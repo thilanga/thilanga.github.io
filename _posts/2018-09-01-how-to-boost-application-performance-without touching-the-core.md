@@ -24,7 +24,7 @@ even before we open the code editor and write the very first line.
 I'll take an example from the project I'm currently working on.
 
 In my team, we were fortunate that performance improvements could be made without making changes to the core code base.
-The application is built using nested set model (tree architecture). [link wiki]. We use MongoDB to store the data and
+The application is built using nested set model ([tree architecture](https://en.wikipedia.org/wiki/Tree_structure){:target="_blank"}). We use MongoDB to store the data and
 the application lifts the weight of object loading.
 
 In simple terms, we have only one class which is responsible for all data objects in the system. Yes,
