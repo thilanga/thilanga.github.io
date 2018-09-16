@@ -49,6 +49,25 @@
 
     </ul>
 
+    <!-- light / dark mode toggle -->
+    <label class="switch">
+      <input type="checkbox" onclick="toggle(this)">
+      <span class="slider round"></span>
+    </label>
+
+    <script>
+      var toggle = function (checkbox) {
+        var body = document.querySelector('body');
+        if (checkbox.checked) {
+          body.classList.remove('t--light');
+          body.classList.add('t--dark');
+        } else {
+          body.classList.remove('t--dark');
+          body.classList.add('t--light');
+        }
+      }
+    </script>
+
     <p>&copy; {{ site.time | date: '%Y' }}. All rights reserved.</p>
   </div>
 </div>
