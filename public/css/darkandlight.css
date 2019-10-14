@@ -1,4 +1,6 @@
-
+.wait {
+  display: none;
+}
 /* sidebar */
 .t--light .sidebar {
   color: #fff;
