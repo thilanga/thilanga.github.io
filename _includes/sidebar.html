@@ -51,19 +51,38 @@
 
     <!-- light / dark mode toggle -->
     <label class="switch">
-      <input type="checkbox" onclick="toggle(this)">
+      <input type="checkbox" id="toggle" onclick="toggle(this)">
       <span class="slider round"></span>
     </label>
 
     <script>
-      var toggle = function (checkbox) {
-        var body = document.querySelector('body');
-        if (checkbox.checked) {
-          body.classList.remove('t--light');
-          body.classList.add('t--dark');
+      document.addEventListener('DOMContentLoaded', (event) => {
+        /* the 'wait' class hides the whole body until a mode is
+           applied so that the whole page doesn't go light to dark
+           mode every time you navigate */
+        var body = document.querySelector('body')
+        var checkbox = document.getElementById('toggle')
+        if (localStorage.getItem('mode') === 'dark') {
+          checkbox.checked = true
+          body.classList.remove('wait')
+          body.classList.add('t--dark')
         } else {
-          body.classList.remove('t--dark');
-          body.classList.add('t--light');
+          checkbox.checked = false
+          body.classList.remove('wait')
+          body.classList.add('t--light')
+        }
+      })
+
+      var toggle = function (checkbox) {
+        var body = document.querySelector('body')
+        if (checkbox.checked) {
+          localStorage.setItem('mode', 'dark')
+          body.classList.remove('t--light')
+          body.classList.add('t--dark')
+        } else {
+          localStorage.setItem('mode', 'light')
+          body.classList.remove('t--dark')
+          body.classList.add('t--light')
         }
       }
     </script>
